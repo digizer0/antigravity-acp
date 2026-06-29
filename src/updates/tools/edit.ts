@@ -87,8 +87,7 @@ import {
 
 function isPlanFile(targetFile: string): boolean {
 	if (
-		targetFile &&
-		targetFile.includes(".gemini") &&
+		targetFile?.includes(".gemini") &&
 		targetFile.includes("antigravity-cli") &&
 		targetFile.includes("brain") &&
 		targetFile.endsWith("md")
@@ -113,8 +112,8 @@ export function editUpdate(
 			? `Edit ${shown}`
 			: "Edit";
 
-	const content: any[] = [];
-	const locations: any[] = [];
+	const content: Record<string, unknown>[] = [];
+	const locations: Record<string, unknown>[] = [];
 
 	const fullContent = asStr(pick(rawInput, "CodeContent", "codeContent"));
 	if (fullContent !== null) {
@@ -155,7 +154,7 @@ export function editUpdate(
 				});
 
 				const line = asNum(pick(chunk, "StartLine", "startLine"));
-				const loc: Record<string, any> = { path: targetFile };
+				const loc: Record<string, unknown> = { path: targetFile };
 				if (line !== null) loc.line = line;
 				locations.push(loc);
 			}

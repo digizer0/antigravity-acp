@@ -77,8 +77,8 @@ export function searchUpdate(stepRow: StepRow, cwd?: string): SessionUpdate {
 	const grep = stepPayload.grepSearch;
 
 	let title = "Search";
-	const content: any[] = [];
-	const locations: any[] = [];
+	const content: Record<string, unknown>[] = [];
+	const locations: Record<string, unknown>[] = [];
 
 	if (grep || name === "grep_search" || stepType === 7) {
 		// grep_search → "Search '<query>' <path>"

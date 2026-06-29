@@ -37,7 +37,7 @@ import {
  * the title always fell back to a generic label. We parse first, surface the
  * command as the title, and echo it as a code block with the cwd as a location.
  */
-export function executeUpdate(stepRow: StepRow, cwd?: string): SessionUpdate {
+export function executeUpdate(stepRow: StepRow, _cwd?: string): SessionUpdate {
 	const { stepPayload } = stepRow;
 	const toolRun = stepPayload.toolRun;
 
@@ -52,14 +52,14 @@ export function executeUpdate(stepRow: StepRow, cwd?: string): SessionUpdate {
 		asStr(toolRun?.titleSecondary)?.trim() ||
 		"Command Execution";
 
-	const content: any[] = [];
+	const content: Record<string, unknown>[] = [];
 	if (cmd && cmd.trim().length > 0) {
 		content.push(codeBlock(cmd));
 	}
 
 	// Locations use absolute paths (consistent with the other builders); the
 	// command's working directory is the only path a run_command exposes.
-	const locations: any[] = [];
+	const locations: Record<string, unknown>[] = [];
 	const commandCwd = fsPath(asStr(pick(rawInput, "Cwd", "cwd")));
 	if (commandCwd) {
 		locations.push({ path: commandCwd });

@@ -1,6 +1,4 @@
 import { afterEach, describe, expect, mock, spyOn, test } from "bun:test";
-import * as sdk from "@agentclientprotocol/sdk";
-import * as agentModule from "../../src/acp/agent";
 import { runAcp } from "../../src/acp/server";
 
 describe("runAcp", () => {
@@ -22,7 +20,7 @@ describe("runAcp", () => {
 					const agentBuilder = {
 						onRequest: () => agentBuilder,
 						onNotification: () => agentBuilder,
-						connect: (stream: any) => {
+						connect: (_stream: any) => {
 							return { closed: Promise.resolve() };
 						},
 					};
@@ -34,9 +32,7 @@ describe("runAcp", () => {
 		// Mock AgyAcpAgent so we don't do real background tasks
 		mock.module("../../src/acp/agent", () => {
 			return {
-				AgyAcpAgent: class MockAgyAcpAgent {
-					constructor() {}
-				},
+				AgyAcpAgent: class MockAgyAcpAgent {},
 			};
 		});
 
@@ -60,7 +56,7 @@ describe("runAcp", () => {
 			mockWriter as any,
 		);
 
-		const { connection, agent } = runAcp();
+		runAcp();
 
 		expect(stdinSpy).toHaveBeenCalled();
 		expect(stdoutSpy).toHaveBeenCalled();

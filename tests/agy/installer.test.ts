@@ -272,23 +272,23 @@ describe("agy/installer.ts", () => {
 			});
 
 			// Mock filesystem operations during extraction
-			const mkdtempSyncSpy = spyOn(fs, "mkdtempSync").mockReturnValue(
+			const _mkdtempSyncSpy = spyOn(fs, "mkdtempSync").mockReturnValue(
 				"/mock/tmp/agy-acp-123",
 			);
-			const writeFileSyncSpy = spyOn(fs, "writeFileSync").mockImplementation(
+			const _writeFileSyncSpy = spyOn(fs, "writeFileSync").mockImplementation(
 				() => {},
 			);
-			const mkdirSyncSpy = spyOn(fs, "mkdirSync").mockImplementation(
+			const _mkdirSyncSpy = spyOn(fs, "mkdirSync").mockImplementation(
 				() => undefined,
 			);
-			const rmSyncSpy = spyOn(fs, "rmSync").mockImplementation(() => {});
+			const _rmSyncSpy = spyOn(fs, "rmSync").mockImplementation(() => {});
 			const copyFileSyncSpy = spyOn(fs, "copyFileSync").mockImplementation(
 				() => {},
 			);
 			const chmodSyncSpy = spyOn(fs, "chmodSync").mockImplementation(() => {});
 
 			// Mock finding binary
-			const readdirSyncSpy = spyOn(fs, "readdirSync").mockReturnValue([
+			const _readdirSyncSpy = spyOn(fs, "readdirSync").mockReturnValue([
 				{ name: "agy", isFile: () => true, isDirectory: () => false } as any,
 			]);
 

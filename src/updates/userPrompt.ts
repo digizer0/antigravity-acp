@@ -23,10 +23,9 @@ export function userPromptUpdate(stepRow: StepRow): SessionUpdate[] {
 	const regex =
 		/<user_text>\n([\s\S]*?)\n<\/user_text>|<resource_link uri="(.*?)" title="(.*?)"\/>|<embedded_resource uri="(.*?)">\n([\s\S]*?)\n<\/embedded_resource>/g;
 
-	let match;
 	let foundAny = false;
 
-	while ((match = regex.exec(text)) !== null) {
+	for (const match of text.matchAll(regex)) {
 		foundAny = true;
 		if (match[1] !== undefined) {
 			blocks.push({ type: "text", text: match[1] });

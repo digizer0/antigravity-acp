@@ -48,7 +48,7 @@ export function subagentUpdate(stepRow: StepRow): SessionUpdate {
 				asStr(toolRun?.titlePrimary)?.trim() ||
 				"Invoke subagent";
 
-	const content: any[] = [];
+	const content: Record<string, unknown>[] = [];
 	for (const sub of subagents) {
 		const prompt = asStr(pick(sub, "Prompt", "prompt"))?.trim();
 		if (prompt) content.push(codeBlock(prompt));

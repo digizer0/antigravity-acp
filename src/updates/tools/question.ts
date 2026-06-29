@@ -50,7 +50,7 @@ export function questionUpdate(stepRow: StepRow): SessionUpdate {
 		asStr(toolRun?.titleSecondary)?.trim() ||
 		"Ask question";
 
-	const content: any[] = [];
+	const content: Record<string, unknown>[] = [];
 	for (const q of questions) {
 		const question = asStr(pick(q, "question", "Question"))?.trim();
 		if (!question) continue;

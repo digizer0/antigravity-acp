@@ -13,7 +13,7 @@ import { AgyAcpAgent } from "../../src/acp/agent";
 import { SessionManager } from "../../src/acp/sessions";
 
 const AUTH_METHOD_ID = "agy-agent";
-const PLAN_MODE_ID = "plan";
+const _PLAN_MODE_ID = "plan";
 
 describe("AgyAcpAgent", () => {
 	let agent: AgyAcpAgent;

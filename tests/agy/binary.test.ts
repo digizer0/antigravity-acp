@@ -1,11 +1,10 @@
 import { afterEach, describe, expect, mock, spyOn, test } from "bun:test";
 import * as fs from "node:fs";
-import * as path from "node:path";
 import { downloadedAgyPath, resolveAgyBinary } from "../../src/agy/binary";
 
 describe("agy binary resolution", () => {
-	const originalExecPath = process.execPath;
-	const originalPlatform = process.platform;
+	const _originalExecPath = process.execPath;
+	const _originalPlatform = process.platform;
 	const originalEnv = { ...process.env };
 
 	afterEach(() => {

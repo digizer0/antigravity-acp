@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, mock, test } from "bun:test";
+import { describe, expect, test } from "bun:test";
 import { Adapter } from "../../src/acp/adapter";
 
 describe("Adapter", () => {

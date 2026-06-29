@@ -77,14 +77,17 @@ export function otherUpdate(stepRow: StepRow): SessionUpdate {
 	// last resort.) Echo the meaningful arguments, dropping display-only keys.
 	const title =
 		asStr(toolRun?.titlePrimary)?.trim() ||
-		asStr(rawInput?.toolSummary)?.trim() ||
+		asStr(pick(rawInput, "toolSummary", "ToolSummary"))?.trim() ||
 		asStr(toolRun?.titleSecondary)?.trim() ||
 		name ||
 		"Tool";
 
-	const content: any[] = [];
+	const content: Record<string, unknown>[] = [];
 	if (rawInput && typeof rawInput === "object" && !Array.isArray(rawInput)) {
-		const { toolAction, toolSummary, ...rest } = rawInput;
+		const { toolAction, toolSummary, ...rest } = rawInput as Record<
+			string,
+			unknown
+		>;
 		void toolAction;
 		void toolSummary;
 		if (Object.keys(rest).length > 0) {

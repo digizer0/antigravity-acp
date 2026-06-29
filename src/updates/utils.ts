@@ -1,5 +1,5 @@
+import path from "node:path";
 import type { SessionUpdate, ToolKind } from "@agentclientprotocol/sdk";
-import path from "path";
 import type {
 	ErrorDetails,
 	PermissionInfo,
@@ -12,7 +12,7 @@ import type { StepRow } from "../types";
  * step, tolerating missing or malformed payloads. Every tool builder needs
  * these args, so the parse lives here once.
  */
-export function parseRawInput(stepRow: StepRow): any | null {
+export function parseRawInput(stepRow: StepRow): unknown {
 	const rawJson = stepRow.stepPayload.toolRun?.call?.rawInputJson;
 	if (typeof rawJson === "string" && rawJson.trim().length > 0) {
 		try {
@@ -49,24 +49,23 @@ export function toolCallStatus(
 		case 6:
 		case 7:
 			return "failed";
-		case 3:
 		default:
 			return "completed";
 	}
 }
 
 /** A plain text content block for a tool call. */
-export function textBlock(text: string): any {
+export function textBlock(text: string): Record<string, unknown> {
 	return { type: "content", content: { type: "text", text } };
 }
 
 /** A fenced-code-block text content block for a tool call. */
-export function codeBlock(text: string): any {
+export function codeBlock(text: string): Record<string, unknown> {
 	return textBlock(fencedCodeBlock(text));
 }
 
 /** Render a decoded `error_details` blob as a content block. */
-function errorBlock(e: ErrorDetails): any {
+function errorBlock(e: ErrorDetails): Record<string, unknown> {
 	const msg = e.message.trim() || e.detail.trim() || "Tool call failed";
 	const detail =
 		e.detail.trim() && e.detail.trim() !== msg ? `\n${e.detail.trim()}` : "";
@@ -74,13 +73,13 @@ function errorBlock(e: ErrorDetails): any {
 }
 
 /** Render a decoded `permissions` blob as a content block. */
-function permissionBlock(p: PermissionInfo): any {
+function permissionBlock(p: PermissionInfo): Record<string, unknown> {
 	const target = p.value.trim() ? ` (${p.value.trim()})` : "";
 	return textBlock(`Permission requested: ${p.kind || "unknown"}${target}`);
 }
 
 /** Render a decoded `task_details` blob as a content block. */
-function taskBlock(t: TaskDetails): any {
+function taskBlock(t: TaskDetails): Record<string, unknown> {
 	const lines: string[] = [];
 	if (t.description) lines.push(t.description);
 	if (t.taskId) lines.push(`Task: ${t.taskId}`);
@@ -100,8 +99,8 @@ export function toolCallUpdate(opts: {
 	title: string;
 	kind: ToolKind;
 	status?: "pending" | "in_progress" | "completed" | "failed";
-	content?: any[];
-	locations?: any[];
+	content?: Record<string, unknown>[];
+	locations?: Record<string, unknown>[];
 }): SessionUpdate {
 	const {
 		stepRow,
@@ -112,7 +111,7 @@ export function toolCallUpdate(opts: {
 		locations,
 	} = opts;
 
-	const blocks: any[] = [...(content ?? [])];
+	const blocks: Record<string, unknown>[] = [...(content ?? [])];
 	if (stepRow.task) blocks.push(taskBlock(stepRow.task));
 	if (stepRow.permission) blocks.push(permissionBlock(stepRow.permission));
 	if (stepRow.error) blocks.push(errorBlock(stepRow.error));
@@ -195,10 +194,7 @@ export function toolKind(name: string): ToolKind {
 	return "other";
 }
 
-export function pick(
-	o: any | null | undefined,
-	...keys: string[]
-): any | undefined {
+export function pick(o: unknown, ...keys: string[]): unknown {
 	if (
 		o === null ||
 		o === undefined ||
@@ -206,16 +202,20 @@ export function pick(
 		Array.isArray(o)
 	)
 		return undefined;
-	for (const k of keys) if (k in o) return (o as Record<string, any>)[k];
+	for (const k of keys) {
+		if (k in o) {
+			return (o as Record<string, unknown>)[k];
+		}
+	}
 	return undefined;
 }
 
-export function asStr(v: any | undefined): string | null {
+export function asStr(v: unknown): string | null {
 	return typeof v === "string" ? v : null;
 }
 
 /** Coerce a value that may be a number or numeric string into a number. */
-export function asNum(v: any): number | null {
+export function asNum(v: unknown): number | null {
 	if (typeof v === "number" && Number.isFinite(v)) return v;
 	if (typeof v === "string" && v.trim().length > 0) {
 		const n = Number(v);

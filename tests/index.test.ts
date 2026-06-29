@@ -49,7 +49,7 @@ describe("Root index.ts (CLI args & main logic)", () => {
 			stderr: "pipe",
 			stdout: "pipe",
 		});
-		const exitCode = await proc.exited;
+		const _exitCode = await proc.exited;
 		const stderr = await new Response(proc.stderr).text();
 		fs.unlinkSync(testFile);
 

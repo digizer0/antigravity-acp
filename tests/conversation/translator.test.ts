@@ -63,7 +63,7 @@ describe("conversation/translator", () => {
 				skipNarration: true,
 			});
 
-			const updates = translator.translate([
+			const _updates = translator.translate([
 				mockStep(1, 15, { agentText: { text: "I will now do this" } }), // Matches isNarration
 			]);
 			// Wait, isNarration needs to be mocked or we can rely on actual filterNarration?

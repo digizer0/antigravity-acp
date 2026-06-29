@@ -1,5 +1,5 @@
 // @ts-nocheck
-import { describe, expect, mock, spyOn, test } from "bun:test";
+import { describe, expect, test } from "bun:test";
 import { type AgentContext, methods } from "@agentclientprotocol/sdk";
 import { AcpClient } from "../../src/acp/client";
 

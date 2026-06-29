@@ -5,7 +5,6 @@ import {
 	asNum,
 	asStr,
 	codeBlock,
-	fencedCodeBlock,
 	fsPath,
 	parseRawInput,
 	pick,
@@ -14,7 +13,6 @@ import {
 	toolCallId,
 	toolCallStatus,
 	toolCallUpdate,
-	toolKind,
 } from "../../src/updates/utils";
 
 describe("updates/utils.ts", () => {

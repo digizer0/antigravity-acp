@@ -93,8 +93,8 @@ export function readUpdate(stepRow: StepRow, cwd?: string): SessionUpdate {
 	const list = stepPayload.listDirectory;
 
 	let title = "Read";
-	const content: any[] = [];
-	const locations: any[] = [];
+	const content: Record<string, unknown>[] = [];
+	const locations: Record<string, unknown>[] = [];
 
 	if (list || name === "list_dir" || stepType === 9) {
 		// list_dir → "Read <dir>"
