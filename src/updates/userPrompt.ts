@@ -1,5 +1,4 @@
 import type { ContentBlock, SessionUpdate } from "@agentclientprotocol/sdk";
-import { PLAN_MODE_INJECTION } from "../constants";
 import type { StepRow } from "../types";
 
 /**
@@ -13,11 +12,10 @@ export function userPromptUpdate(stepRow: StepRow): SessionUpdate[] {
 	const up = stepRow.stepPayload.userPrompt;
 	let text = (up?.text || up?.content?.text || "").trim();
 
-	// Remove the planning mode injection if present
-	const trimmedInjection = PLAN_MODE_INJECTION.trim();
-	if (text.startsWith(trimmedInjection)) {
-		text = text.slice(trimmedInjection.length).trim();
-	}
+	// Remove the planning mode injection if present (wrapped in <system>...</system> or <system>...<system>)
+	text = text
+		.replace(/^<system>\n\[PLANNING MODE\][\s\S]*?\n<\/?system>\n?/, "")
+		.trim();
 
 	const blocks: ContentBlock[] = [];
 	const regex =
