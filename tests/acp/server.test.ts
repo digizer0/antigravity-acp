@@ -1,5 +1,7 @@
 import { afterEach, describe, expect, mock, spyOn, test } from "bun:test";
+import * as sdk from "@agentclientprotocol/sdk";
 import { runAcp } from "../../src/acp/server";
+import * as processUtils from "../../src/agy/process";
 
 describe("runAcp", () => {
 	afterEach(() => {
@@ -8,33 +10,24 @@ describe("runAcp", () => {
 
 	test("should map Bun.stdin and Bun.stdout to ndJsonStream", async () => {
 		let ndJsonStreamArgs: any[] = [];
-		mock.module("@agentclientprotocol/sdk", () => {
-			const original = require("@agentclientprotocol/sdk");
-			return {
-				...original,
-				ndJsonStream: (...args: any[]) => {
-					ndJsonStreamArgs = args;
-					return "mocked_stream";
-				},
-				agent: () => {
-					const agentBuilder = {
-						onRequest: () => agentBuilder,
-						onNotification: () => agentBuilder,
-						connect: (_stream: any) => {
-							return { closed: Promise.resolve() };
-						},
-					};
-					return agentBuilder;
-				},
-			};
-		});
 
-		// Mock AgyAcpAgent so we don't do real background tasks
-		mock.module("../../src/acp/agent", () => {
-			return {
-				AgyAcpAgent: class MockAgyAcpAgent {},
-			};
-		});
+		// Spy on SDK methods instead of mock.module
+		spyOn(sdk, "ndJsonStream").mockImplementation(((...args: any[]) => {
+			ndJsonStreamArgs = args;
+			return "mocked_stream" as any;
+		}) as any);
+
+		const agentBuilder = {
+			onRequest: () => agentBuilder,
+			onNotification: () => agentBuilder,
+			connect: (_stream: any) => {
+				return { closed: Promise.resolve() };
+			},
+		};
+		spyOn(sdk, "agent").mockReturnValue(agentBuilder as any);
+
+		// Spy on discoverModels to prevent real background processes
+		spyOn(processUtils, "discoverModels").mockResolvedValue([]);
 
 		// Spy on Bun.stdin/stdout methods
 		let writerWritten = false;
