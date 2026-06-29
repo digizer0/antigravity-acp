@@ -11,8 +11,9 @@
 		"index.ts",
 		"src",
 		"scripts",
-		"bin/.gitkeep",
-		"README.md"
+		"README.md",
+		"LICENSE",
+		"CHANGELOG.md"
 	],
 	"scripts": {
 		"start": "bun run index.ts",
@@ -41,5 +42,13 @@
 		"@agentclientprotocol/sdk": "^1.0.0",
 		"@bufbuild/protobuf": "^2.12.1"
 	},
+	"repository": {
+		"type": "git",
+		"url": "git+https://github.com/shubzkothekar/antigravity-acp.git"
+	},
+	"bugs": {
+		"url": "https://github.com/shubzkothekar/antigravity-acp/issues"
+	},
+	"homepage": "https://github.com/shubzkothekar/antigravity-acp#readme",
 	"license": "MIT"
 }
