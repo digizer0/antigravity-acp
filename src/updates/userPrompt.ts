@@ -1,6 +1,6 @@
-import type { SessionUpdate, ContentBlock } from "@agentclientprotocol/sdk";
-import type { StepRow } from "../types";
+import type { ContentBlock, SessionUpdate } from "@agentclientprotocol/sdk";
 import { PLAN_MODE_INJECTION } from "../constants";
+import type { StepRow } from "../types";
 
 /**
  * Step type 14 — the user's prompt / input that opened a turn.
@@ -10,43 +10,44 @@ import { PLAN_MODE_INJECTION } from "../constants";
  * replayed conversations show the user's turn alongside the agent's.
  */
 export function userPromptUpdate(stepRow: StepRow): SessionUpdate[] {
-  const up = stepRow.stepPayload.userPrompt;
-  let text = (up?.text || up?.content?.text || "").trim();
+	const up = stepRow.stepPayload.userPrompt;
+	let text = (up?.text || up?.content?.text || "").trim();
 
-  // Remove the planning mode injection if present
-  const trimmedInjection = PLAN_MODE_INJECTION.trim();
-  if (text.startsWith(trimmedInjection)) {
-    text = text.slice(trimmedInjection.length).trim();
-  }
+	// Remove the planning mode injection if present
+	const trimmedInjection = PLAN_MODE_INJECTION.trim();
+	if (text.startsWith(trimmedInjection)) {
+		text = text.slice(trimmedInjection.length).trim();
+	}
 
-  const blocks: ContentBlock[] = [];
-  const regex = /<user_text>\n([\s\S]*?)\n<\/user_text>|<resource_link uri="(.*?)" title="(.*?)"\/>|<embedded_resource uri="(.*?)">\n([\s\S]*?)\n<\/embedded_resource>/g;
-  
-  let match;
-  let foundAny = false;
-  
-  while ((match = regex.exec(text)) !== null) {
-    foundAny = true;
-    if (match[1] !== undefined) {
-      blocks.push({ type: "text", text: match[1] });
-    } else if (match[2] !== undefined) {
-      const uri = match[2].replace(/&quot;/g, '"');
-      const title = (match[3] || "").replace(/&quot;/g, '"');
-      blocks.push({ type: "resource_link", uri, name: title, title });
-    } else if (match[4] !== undefined) {
-      const uri = match[4].replace(/&quot;/g, '"');
-      const textContent = match[5] || "";
-      blocks.push({ type: "resource", resource: { uri, text: textContent } });
-    }
-  }
+	const blocks: ContentBlock[] = [];
+	const regex =
+		/<user_text>\n([\s\S]*?)\n<\/user_text>|<resource_link uri="(.*?)" title="(.*?)"\/>|<embedded_resource uri="(.*?)">\n([\s\S]*?)\n<\/embedded_resource>/g;
 
-  if (!foundAny) {
-    blocks.push({ type: "text", text });
-  }
+	let match;
+	let foundAny = false;
 
-  return blocks.map((content) => ({
-    sessionUpdate: "user_message_chunk",
-    content,
-    messageId: String(stepRow.idx),
-  }));
+	while ((match = regex.exec(text)) !== null) {
+		foundAny = true;
+		if (match[1] !== undefined) {
+			blocks.push({ type: "text", text: match[1] });
+		} else if (match[2] !== undefined) {
+			const uri = match[2].replace(/&quot;/g, '"');
+			const title = (match[3] || "").replace(/&quot;/g, '"');
+			blocks.push({ type: "resource_link", uri, name: title, title });
+		} else if (match[4] !== undefined) {
+			const uri = match[4].replace(/&quot;/g, '"');
+			const textContent = match[5] || "";
+			blocks.push({ type: "resource", resource: { uri, text: textContent } });
+		}
+	}
+
+	if (!foundAny) {
+		blocks.push({ type: "text", text });
+	}
+
+	return blocks.map((content) => ({
+		sessionUpdate: "user_message_chunk",
+		content,
+		messageId: String(stepRow.idx),
+	}));
 }

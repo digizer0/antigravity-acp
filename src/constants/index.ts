@@ -6,8 +6,8 @@ const HOME = os.homedir();
 /** Where agy writes its per-conversation SQLite databases.
  *  Override via AGY_CONVERSATIONS_DIR if agy uses a different path on this OS. */
 export const CONVERSATION_DIR =
-  process.env.AGY_CONVERSATIONS_DIR ||
-  path.join(HOME, ".gemini", "antigravity-cli", "conversations");
+	process.env.AGY_CONVERSATIONS_DIR ||
+	path.join(HOME, ".gemini", "antigravity-cli", "conversations");
 
 /** Directory holding this server's persistent state (session bindings). */
 export const STATE_DIR = path.join(HOME, ".agy-acp");
@@ -34,26 +34,26 @@ export const BYPASS_MODE_ID = "bypassPermissions";
 export const PLAN_MODE_ID = "plan";
 
 export const PLAN_MODE_INJECTION =
-  "<system>\n[PLANNING MODE] You must NOT write, edit, create, move, or execute any files or " +
-  "commands. You may only read, search, and explore. Your response must be a clear. " +
-  "Exception: you can use a tool to write a step-by-step implementation plan for how to accomplish the following task — strictly do not start " +
-  "implementing it:\n<system>\n";
+	"<system>\n[PLANNING MODE] You must NOT write, edit, create, move, or execute any files or " +
+	"commands. You may only read, search, and explore. Your response must be a clear. " +
+	"Exception: you can use a tool to write a step-by-step implementation plan for how to accomplish the following task — strictly do not start " +
+	"implementing it:\n<system>\n";
 
 export const AUTH_METHOD_ID = "agy-agent";
 
 export const AVAILABLE_COMMANDS = [
-  { name: "goal", description: "Run a long-running task thoroughly" },
-  {
-    name: "schedule",
-    description: "Run an instruction on a recurring schedule or set a timer",
-  },
-  {
-    name: "grill-me",
-    description: "Align on a plan through an interactive interview",
-  },
-  {
-    name: "teamwork-preview",
-    description: "Preview a team of autonomous agents working together",
-  },
-  { name: "learn", description: "Persist a behavior for future tasks" },
+	{ name: "goal", description: "Run a long-running task thoroughly" },
+	{
+		name: "schedule",
+		description: "Run an instruction on a recurring schedule or set a timer",
+	},
+	{
+		name: "grill-me",
+		description: "Align on a plan through an interactive interview",
+	},
+	{
+		name: "teamwork-preview",
+		description: "Preview a team of autonomous agents working together",
+	},
+	{ name: "learn", description: "Persist a behavior for future tasks" },
 ];

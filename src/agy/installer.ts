@@ -63,7 +63,10 @@ export function sha256hex(buf: Buffer): string {
 	return crypto.createHash("sha256").update(buf).digest("hex");
 }
 
-export async function extractTarGz(archive: string, destDir: string): Promise<void> {
+export async function extractTarGz(
+	archive: string,
+	destDir: string,
+): Promise<void> {
 	const proc = Bun.spawn(["tar", "-xzf", archive, "-C", destDir], {
 		stdin: "ignore",
 		stdout: "ignore",
@@ -76,7 +79,10 @@ export async function extractTarGz(archive: string, destDir: string): Promise<vo
 	}
 }
 
-export async function extractZip(archive: string, destDir: string): Promise<void> {
+export async function extractZip(
+	archive: string,
+	destDir: string,
+): Promise<void> {
 	const proc = Bun.spawn(
 		[
 			"powershell",
@@ -94,7 +100,11 @@ export async function extractZip(archive: string, destDir: string): Promise<void
 	}
 }
 
-export function findBinary(dir: string, name: string, maxDepth = 2): string | null {
+export function findBinary(
+	dir: string,
+	name: string,
+	maxDepth = 2,
+): string | null {
 	if (maxDepth < 0) return null;
 	let entries: fs.Dirent[];
 	try {

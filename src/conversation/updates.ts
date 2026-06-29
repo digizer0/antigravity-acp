@@ -22,7 +22,10 @@ import { userPromptUpdate } from "../updates/userPrompt";
  * artifact progress wrappers have a tool-run header but no `call`), so we don't
  * emit empty tool_calls.
  */
-function buildByToolName(stepRow: StepRow, cwd?: string): SessionUpdate | SessionUpdate[] | null {
+function buildByToolName(
+	stepRow: StepRow,
+	cwd?: string,
+): SessionUpdate | SessionUpdate[] | null {
 	const name = stepRow.stepPayload.toolRun?.call?.namePrimary ?? "";
 	if (!name) return null;
 

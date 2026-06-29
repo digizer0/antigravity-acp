@@ -1,14 +1,14 @@
 import type { SessionUpdate } from "@agentclientprotocol/sdk";
 import type { StepRow } from "../../types";
 import {
-  asNum,
-  asStr,
-  fsPath,
-  parseRawInput,
-  pick,
-  textBlock,
-  toDisplayPath,
-  toolCallUpdate,
+	asNum,
+	asStr,
+	fsPath,
+	parseRawInput,
+	pick,
+	textBlock,
+	toDisplayPath,
+	toolCallUpdate,
 } from "../utils";
 
 /**
@@ -86,89 +86,89 @@ import {
  */
 
 function isPlanFile(targetFile: string): boolean {
-  if (
-    targetFile &&
-    targetFile.includes(".gemini") &&
-    targetFile.includes("antigravity-cli") &&
-    targetFile.includes("brain") &&
-    targetFile.endsWith("md")
-  ) {
-    return true;
-  }
-  return false;
+	if (
+		targetFile &&
+		targetFile.includes(".gemini") &&
+		targetFile.includes("antigravity-cli") &&
+		targetFile.includes("brain") &&
+		targetFile.endsWith("md")
+	) {
+		return true;
+	}
+	return false;
 }
 export function editUpdate(
-  stepRow: StepRow,
-  cwd?: string,
+	stepRow: StepRow,
+	cwd?: string,
 ): SessionUpdate | SessionUpdate[] {
-  const rawInput = parseRawInput(stepRow);
-  const displayCwd = fsPath(cwd) ?? undefined;
+	const rawInput = parseRawInput(stepRow);
+	const displayCwd = fsPath(cwd) ?? undefined;
 
-  // All edit variants target a single file.
-  const targetFile = fsPath(asStr(pick(rawInput, "TargetFile", "targetFile")));
-  const shown = targetFile ? toDisplayPath(targetFile, displayCwd) : "";
-  const title = isPlanFile(targetFile || "")
-    ? (shown.split("/").pop() ?? "Implementation Plan")
-    : shown
-      ? `Edit ${shown}`
-      : "Edit";
+	// All edit variants target a single file.
+	const targetFile = fsPath(asStr(pick(rawInput, "TargetFile", "targetFile")));
+	const shown = targetFile ? toDisplayPath(targetFile, displayCwd) : "";
+	const title = isPlanFile(targetFile || "")
+		? (shown.split("/").pop() ?? "Implementation Plan")
+		: shown
+			? `Edit ${shown}`
+			: "Edit";
 
-  const content: any[] = [];
-  const locations: any[] = [];
+	const content: any[] = [];
+	const locations: any[] = [];
 
-  const fullContent = asStr(pick(rawInput, "CodeContent", "codeContent"));
-  if (fullContent !== null) {
-    // write_to_file → the whole file content is the new text.
-    if (isPlanFile(targetFile || "")) {
-      // Plans are user-facing prose, not a code diff — render as text.
-      content.push(textBlock(fullContent));
-    } else if (targetFile) {
-      content.push({
-        type: "diff",
-        path: targetFile,
-        oldText: null,
-        newText: fullContent,
-      });
-    }
-    if (targetFile) locations.push({ path: targetFile });
-  } else {
-    // replace_file_content (single inline chunk) or multi_replace_file_content
-    // (a ReplacementChunks array). Normalise both to a list of chunks.
-    const chunksRaw = pick(rawInput, "ReplacementChunks", "replacementChunks");
-    const chunks = Array.isArray(chunksRaw) ? chunksRaw : [rawInput];
+	const fullContent = asStr(pick(rawInput, "CodeContent", "codeContent"));
+	if (fullContent !== null) {
+		// write_to_file → the whole file content is the new text.
+		if (isPlanFile(targetFile || "")) {
+			// Plans are user-facing prose, not a code diff — render as text.
+			content.push(textBlock(fullContent));
+		} else if (targetFile) {
+			content.push({
+				type: "diff",
+				path: targetFile,
+				oldText: null,
+				newText: fullContent,
+			});
+		}
+		if (targetFile) locations.push({ path: targetFile });
+	} else {
+		// replace_file_content (single inline chunk) or multi_replace_file_content
+		// (a ReplacementChunks array). Normalise both to a list of chunks.
+		const chunksRaw = pick(rawInput, "ReplacementChunks", "replacementChunks");
+		const chunks = Array.isArray(chunksRaw) ? chunksRaw : [rawInput];
 
-    for (const chunk of chunks) {
-      if (isPlanFile(targetFile || "")) continue; // Plans are user-facing prose, not a code diff — render as text.
+		for (const chunk of chunks) {
+			if (isPlanFile(targetFile || "")) continue; // Plans are user-facing prose, not a code diff — render as text.
 
-      const oldText = asStr(pick(chunk, "TargetContent", "targetContent"));
-      const newText = asStr(
-        pick(chunk, "ReplacementContent", "replacementContent"),
-      );
-      if (newText === null) continue;
+			const oldText = asStr(pick(chunk, "TargetContent", "targetContent"));
+			const newText = asStr(
+				pick(chunk, "ReplacementContent", "replacementContent"),
+			);
+			if (newText === null) continue;
 
-      if (targetFile) {
-        content.push({
-          type: "diff",
-          path: targetFile,
-          oldText,
-          newText,
-        });
+			if (targetFile) {
+				content.push({
+					type: "diff",
+					path: targetFile,
+					oldText,
+					newText,
+				});
 
-        const line = asNum(pick(chunk, "StartLine", "startLine"));
-        const loc: Record<string, any> = { path: targetFile };
-        if (line !== null) loc.line = line;
-        locations.push(loc);
-      }
-    }
-  }
+				const line = asNum(pick(chunk, "StartLine", "startLine"));
+				const loc: Record<string, any> = { path: targetFile };
+				if (line !== null) loc.line = line;
+				locations.push(loc);
+			}
+		}
+	}
 
-  if (isPlanFile(targetFile || "") && content.length === 0) return [];
+	if (isPlanFile(targetFile || "") && content.length === 0) return [];
 
-  return toolCallUpdate({
-    stepRow,
-    title,
-    kind: "edit",
-    content,
-    locations,
-  });
+	return toolCallUpdate({
+		stepRow,
+		title,
+		kind: "edit",
+		content,
+		locations,
+	});
 }

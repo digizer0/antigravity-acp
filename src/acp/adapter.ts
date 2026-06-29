@@ -12,156 +12,156 @@ import type { AcpClient } from "./client";
 const sleep = (ms: number) => new Promise<void>((r) => setTimeout(r, ms));
 
 export interface PromptOutcome {
-  stopReason: "end_turn" | "cancelled";
-  conversationId: string | null;
-  lastStepIdx: number;
-  hadUpdates: boolean;
-  /** Set when agy failed to start, or exited non-zero with nothing streamed. */
-  error?: string;
+	stopReason: "end_turn" | "cancelled";
+	conversationId: string | null;
+	lastStepIdx: number;
+	hadUpdates: boolean;
+	/** Set when agy failed to start, or exited non-zero with nothing streamed. */
+	error?: string;
 }
 
 export interface AdapterConfig {
-  binary: string;
-  conversationsDir: string;
-  workingDir: string;
-  skipNarration: boolean;
+	binary: string;
+	conversationsDir: string;
+	workingDir: string;
+	skipNarration: boolean;
 }
 
 export class Adapter {
-  private readonly children = new Map<string, Bun.Subprocess>();
-  private readonly cancelled = new Set<string>();
+	private readonly children = new Map<string, Bun.Subprocess>();
+	private readonly cancelled = new Set<string>();
 
-  constructor(private readonly config: AdapterConfig) {}
+	constructor(private readonly config: AdapterConfig) {}
 
-  /** Request cancellation of an in-flight prompt for a session. */
-  cancel(sessionId: string): void {
-    this.cancelled.add(sessionId);
-    const child = this.children.get(sessionId);
-    if (child) {
-      // SIGINT allows agy to flush its DB before exiting; on Windows we fall
-      // back to an ungraceful kill because SIGINT is not a real signal there.
-      if (process.platform === "win32") {
-        child.kill();
-      } else {
-        child.kill("SIGINT");
-      }
-    }
-  }
+	/** Request cancellation of an in-flight prompt for a session. */
+	cancel(sessionId: string): void {
+		this.cancelled.add(sessionId);
+		const child = this.children.get(sessionId);
+		if (child) {
+			// SIGINT allows agy to flush its DB before exiting; on Windows we fall
+			// back to an ungraceful kill because SIGINT is not a real signal there.
+			if (process.platform === "win32") {
+				child.kill();
+			} else {
+				child.kill("SIGINT");
+			}
+		}
+	}
 
-  /** Run a prompt turn end-to-end: spawn agy, stream deltas, finalize. */
-  async runPrompt(
-    sessionId: string,
-    session: Session,
-    promptText: string,
-    client: AcpClient,
-  ): Promise<PromptOutcome> {
-    this.cancelled.delete(sessionId);
+	/** Run a prompt turn end-to-end: spawn agy, stream deltas, finalize. */
+	async runPrompt(
+		sessionId: string,
+		session: Session,
+		promptText: string,
+		client: AcpClient,
+	): Promise<PromptOutcome> {
+		this.cancelled.delete(sessionId);
 
-    // Use the session's cwd if set, otherwise fall back to the server's workingDir.
-    const effectiveCwd = session.cwd || this.config.workingDir;
+		// Use the session's cwd if set, otherwise fall back to the server's workingDir.
+		const effectiveCwd = session.cwd || this.config.workingDir;
 
-    // Snapshot existing conversations so we can bind the new DB agy creates.
-    const snapshot =
-      session.conversationId === null
-        ? conversationSnapshot(this.config.conversationsDir)
-        : null;
+		// Snapshot existing conversations so we can bind the new DB agy creates.
+		const snapshot =
+			session.conversationId === null
+				? conversationSnapshot(this.config.conversationsDir)
+				: null;
 
-    const args = buildAgyArgs({
-      workingDir: effectiveCwd,
-      additionalDirs: session.additionalDirs,
-      conversationId: session.conversationId,
-      modelId: session.modelId,
-      permissionMode: session.permissionMode,
-      prompt: promptText,
-      extraArgs: extraArgsFromEnv(),
-    });
+		const args = buildAgyArgs({
+			workingDir: effectiveCwd,
+			additionalDirs: session.additionalDirs,
+			conversationId: session.conversationId,
+			modelId: session.modelId,
+			permissionMode: session.permissionMode,
+			prompt: promptText,
+			extraArgs: extraArgsFromEnv(),
+		});
 
-    let child: Bun.Subprocess;
-    try {
-      child = spawnAgy(this.config.binary, args, effectiveCwd);
-    } catch (err) {
-      return {
-        stopReason: "end_turn",
-        conversationId: session.conversationId,
-        lastStepIdx: session.lastStepIdx,
-        hadUpdates: false,
-        error: `failed to run agy: ${(err as Error).message}`,
-      };
-    }
-    this.children.set(sessionId, child);
+		let child: Bun.Subprocess;
+		try {
+			child = spawnAgy(this.config.binary, args, effectiveCwd);
+		} catch (err) {
+			return {
+				stopReason: "end_turn",
+				conversationId: session.conversationId,
+				lastStepIdx: session.lastStepIdx,
+				hadUpdates: false,
+				error: `failed to run agy: ${(err as Error).message}`,
+			};
+		}
+		this.children.set(sessionId, child);
 
-    // Drain stderr concurrently (resolves when the process exits).
-    const stderrPromise = child.stderr
-      ? new Response(child.stderr as ReadableStream).text()
-      : Promise.resolve("");
+		// Drain stderr concurrently (resolves when the process exits).
+		const stderrPromise = child.stderr
+			? new Response(child.stderr as ReadableStream).text()
+			: Promise.resolve("");
 
-    const poller = new StreamPoller({
-      dir: this.config.conversationsDir,
-      conversationId: session.conversationId,
-      baseStepIdx: session.lastStepIdx,
-      skipNarration: this.config.skipNarration,
-      cwd: effectiveCwd,
-      snapshot,
-    });
+		const poller = new StreamPoller({
+			dir: this.config.conversationsDir,
+			conversationId: session.conversationId,
+			baseStepIdx: session.lastStepIdx,
+			skipNarration: this.config.skipNarration,
+			cwd: effectiveCwd,
+			snapshot,
+		});
 
-    // Serialized poll loop: emit updates in order, never overlapping.
-    const pollOnce = async () => {
-      for (const update of poller.poll()) {
-        await client.update(sessionId, update);
-      }
-    };
+		// Serialized poll loop: emit updates in order, never overlapping.
+		const pollOnce = async () => {
+			for (const update of poller.poll()) {
+				await client.update(sessionId, update);
+			}
+		};
 
-    let polling = true;
-    const loop = (async () => {
-      while (polling) {
-        try {
-          await pollOnce();
-        } catch (err) {
-          console.error(`[agy-acp] poll error: ${(err as Error).message}`);
-        }
-        if (!polling) break;
-        await sleep(POLL_INTERVAL_MS);
-      }
-    })();
+		let polling = true;
+		const loop = (async () => {
+			while (polling) {
+				try {
+					await pollOnce();
+				} catch (err) {
+					console.error(`[agy-acp] poll error: ${(err as Error).message}`);
+				}
+				if (!polling) break;
+				await sleep(POLL_INTERVAL_MS);
+			}
+		})();
 
-    const exitCode = await child.exited;
-    polling = false;
-    await loop;
-    this.children.delete(sessionId);
+		const exitCode = await child.exited;
+		polling = false;
+		await loop;
+		this.children.delete(sessionId);
 
-    // A few trailing polls to catch rows flushed right around exit.
-    for (let attempt = 0; attempt < 3; attempt++) {
-      try {
-        await pollOnce();
-      } catch (err) {
-        console.error(`[agy-acp] final poll error: ${(err as Error).message}`);
-      }
-      if (attempt < 2) await sleep(100);
-    }
-    poller.close();
+		// A few trailing polls to catch rows flushed right around exit.
+		for (let attempt = 0; attempt < 3; attempt++) {
+			try {
+				await pollOnce();
+			} catch (err) {
+				console.error(`[agy-acp] final poll error: ${(err as Error).message}`);
+			}
+			if (attempt < 2) await sleep(100);
+		}
+		poller.close();
 
-    const stderr = (await stderrPromise).trim();
-    if (stderr.length > 0) console.error(`[agy-acp] agy stderr: ${stderr}`);
+		const stderr = (await stderrPromise).trim();
+		if (stderr.length > 0) console.error(`[agy-acp] agy stderr: ${stderr}`);
 
-    const wasCancelled = this.cancelled.delete(sessionId);
+		const wasCancelled = this.cancelled.delete(sessionId);
 
-    const outcome: PromptOutcome = {
-      stopReason: wasCancelled ? "cancelled" : "end_turn",
-      conversationId: poller.conversationId,
-      lastStepIdx: poller.lastStepIdx,
-      hadUpdates: poller.hadUpdates,
-    };
+		const outcome: PromptOutcome = {
+			stopReason: wasCancelled ? "cancelled" : "end_turn",
+			conversationId: poller.conversationId,
+			lastStepIdx: poller.lastStepIdx,
+			hadUpdates: poller.hadUpdates,
+		};
 
-    if (!wasCancelled && exitCode !== 0) {
-      console.error(`[agy-acp] WARN: agy exited with status ${exitCode}`);
-      if (!poller.hadUpdates) {
-        outcome.error =
-          stderr.length > 0
-            ? `agy failed: ${stderr}`
-            : `agy exited with status: ${exitCode}`;
-      }
-    }
+		if (!wasCancelled && exitCode !== 0) {
+			console.error(`[agy-acp] WARN: agy exited with status ${exitCode}`);
+			if (!poller.hadUpdates) {
+				outcome.error =
+					stderr.length > 0
+						? `agy failed: ${stderr}`
+						: `agy exited with status: ${exitCode}`;
+			}
+		}
 
-    return outcome;
-  }
+		return outcome;
+	}
 }
