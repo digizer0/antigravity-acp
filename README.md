@@ -5,6 +5,37 @@ Google Antigravity's `agy` CLI, built on [Bun](https://bun.com). It lets any
 ACP-compatible editor drive `agy`: it spawns the CLI, streams its progress live,
 and replays conversation history on demand.
 
+## ⚠️ Terms of Service risk
+
+Google's [Antigravity Terms of Service](https://antigravity.google/terms) state:
+
+> You must not abuse, harm, interfere with, or disrupt the Service. This
+> includes, but is not limited to, using the Service in connection with
+> products not provided by us. Using third party software, tools, or services
+> to access the Service (e.g. using OpenClaw with Antigravity OAuth) is a
+> breach of this Agreement. Such actions may be grounds for suspension or
+> termination of your account.
+
+`antigravity-acp` does not itself request, store, or process any
+authentication credentials — it only spawns the official `agy` binary as a
+subprocess and talks to it over stdio; all Google OAuth login is handled
+entirely by `agy` itself, outside of this project. However, the *effect* is
+still a non-Google, ACP-compatible editor driving `agy` (and therefore your
+Antigravity account) through a third-party tool — the exact pattern Google's
+FAQ names as a Terms of Service violation (Claude Code, OpenClaw, OpenCode,
+and by extension this project).
+
+**By using `antigravity-acp` with an `agy` session logged into your personal
+Antigravity account, you accept the risk that Google may suspend or terminate
+that account.** This project is provided as-is, with no warranty, and its
+authors and contributors accept no liability for any account action Google
+takes as a result of its use. If you want to avoid this risk entirely, Google
+recommends authenticating with a Vertex AI or AI Studio API key instead of an
+Antigravity OAuth login.
+
+See [#3](https://github.com/shubzkothekar/antigravity-acp/issues/3) for
+background.
+
 ## Run
 
 **From source (Bun required):**
