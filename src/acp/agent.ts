@@ -52,6 +52,11 @@ interface ConfigResult {
 	configOptions: SessionConfigOption[];
 }
 
+const DEFAULT_MODELS: DiscoveredModel[] = [
+	{ value: "gemini-3.6-flash-medium", name: "Gemini 3.6 Flash (Medium)" },
+	{ value: "claude-opus-4-6-thinking", name: "Claude Opus 4.6 (Thinking)" },
+];
+
 export class AgyAcpAgent {
 	private readonly sessions: SessionManager;
 	private readonly adapter: Adapter;
@@ -83,6 +88,16 @@ export class AgyAcpAgent {
 			// ignore
 		}
 
+		// Save initial default models cache if missing
+		try {
+			if (!fs.existsSync(MODELS_CACHE_FILE)) {
+				fs.mkdirSync(STATE_DIR, { recursive: true });
+				fs.writeFileSync(MODELS_CACHE_FILE, JSON.stringify(this.availableModels));
+			}
+		} catch {
+			// ignore
+		}
+
 		// Kick off model discovery in the background; update cache and push
 		// config_option_update to all active sessions if the list changes.
 		discoverModels(config.binary).then((models) => {
@@ -102,6 +117,18 @@ export class AgyAcpAgent {
 	}
 
 	// --- ACP methods ---------------------------------------------------------
+
+	listModels() {
+		const models = this.availableModels.length > 0 ? this.availableModels : DEFAULT_MODELS;
+		return {
+			models: models.map((m) => ({
+				id: m.value,
+				name: m.name,
+				description: `Google Antigravity ${m.name}`,
+			})),
+			currentModelId: models[0]?.value,
+		};
+	}
 
 	initialize(): InitializeResponse {
 		return {

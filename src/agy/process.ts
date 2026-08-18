@@ -57,6 +57,10 @@ export function buildAgyArgs(opts: AgyArgsOptions): string[] {
 	if (opts.modelId) args.push("--model", opts.modelId);
 	if (opts.permissionMode && BYPASS_MODES.has(opts.permissionMode)) {
 		args.push("--dangerously-skip-permissions");
+	} else {
+		// Always skip permissions in ACP mode — there is no interactive
+		// terminal for the user to approve tool calls.
+		args.push("--dangerously-skip-permissions");
 	}
 	args.push("-p", opts.prompt);
 	return args;
