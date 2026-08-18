@@ -5,6 +5,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.0] - 2026-08-19
+
+### Added
+- **Improved Non-Interactive Agent Usage**: Refactored the ACP (Agent Client Protocol) harness to better support running the agent smoothly in non-interactive environments, improving reliability for background and automated tasks. (#7)
+- **Support for `/usage` Command**: The ACP server can now seamlessly handle the `/usage` slash command in non-interactive sessions by leveraging the `agy -p` (print) flag under the hood. (#10)
+- **Automated Homebrew Releases**: Integrated a new step into the CI workflow to automatically publish releases to Homebrew, making installation much simpler for macOS users. (#12)
+
+### Fixed
+- **Model ID Parsing**: Fixed an issue where the model ID was not being identified correctly. It is now accurately extracted from the first column of the `agy models` CLI output. (#9)
+
 ## [1.0.0] - 2026-06-29
 
 ### Added
