@@ -30,6 +30,7 @@ export const MAX_REPLAY_CACHE = 32;
 export const MODEL_CONFIG_ID = "model";
 export const MODE_CONFIG_ID = "mode";
 export const DEFAULT_MODE_ID = "default";
+export const ACCEPT_EDITS_MODE_ID = "accept-edits";
 export const BYPASS_MODE_ID = "bypassPermissions";
 export const PLAN_MODE_ID = "plan";
 

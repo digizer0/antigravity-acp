@@ -71,7 +71,7 @@ export class Adapter {
 			additionalDirs: session.additionalDirs,
 			conversationId: session.conversationId,
 			modelId: session.modelId,
-			permissionMode: session.permissionMode,
+			mode: session.permissionMode,
 			prompt: promptText,
 			extraArgs: extraArgsFromEnv(),
 		});

@@ -1,6 +1,5 @@
 // Spawning and querying the agy CLI via Bun's native process APIs.
 
-const BYPASS_MODES = new Set(["bypassPermissions", "bypass", "dontAsk"]);
 
 export interface DiscoveredModel {
 	value: string;
@@ -40,7 +39,7 @@ export interface AgyArgsOptions {
 	additionalDirs?: string[];
 	conversationId: string | null;
 	modelId: string | null;
-	permissionMode: string | null;
+	mode: string | null;
 	prompt: string;
 	/** Extra args from $AGY_EXTRA_ARGS, already split. */
 	extraArgs?: string[];
@@ -55,13 +54,15 @@ export function buildAgyArgs(opts: AgyArgsOptions): string[] {
 	if (opts.extraArgs?.length) args.push(...opts.extraArgs);
 	if (opts.conversationId) args.push("--conversation", opts.conversationId);
 	if (opts.modelId) args.push("--model", opts.modelId);
-	if (opts.permissionMode && BYPASS_MODES.has(opts.permissionMode)) {
-		args.push("--dangerously-skip-permissions");
-	} else {
-		// Always skip permissions in ACP mode — there is no interactive
-		// terminal for the user to approve tool calls.
-		args.push("--dangerously-skip-permissions");
+	// Honor agy's own --mode values. "default" is agy's standard behavior, so we
+	// omit --mode for it (agy applies its default). accept-edits / plan map
+	// directly onto agy's mode enum; pass them verbatim.
+	if (opts.mode && opts.mode !== "default") {
+		args.push("--mode", opts.mode);
 	}
+	// ACP mode has no interactive terminal for the user to approve tool calls,
+	// so auto-approve permissions via agy's own flag.
+	args.push("--dangerously-skip-permissions");
 	args.push("-p", opts.prompt);
 	return args;
 }

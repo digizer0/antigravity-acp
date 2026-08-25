@@ -22,13 +22,13 @@ import { formatUsageOutput } from "../agy/usage-format";
 import {
 	AUTH_METHOD_ID,
 	AVAILABLE_COMMANDS,
+	ACCEPT_EDITS_MODE_ID,
 	BYPASS_MODE_ID,
 	DEFAULT_MODE_ID,
 	MODE_CONFIG_ID,
 	MODEL_CONFIG_ID,
 	MODELS_CACHE_FILE,
 	PLAN_MODE_ID,
-	PLAN_MODE_INJECTION,
 	STATE_DIR,
 } from "../constants";
 import { ReplayCache } from "../conversation/replay";
@@ -320,14 +320,13 @@ export class AgyAcpAgent {
 			return { stopReason: "end_turn" };
 		}
 
-		const text =
-			session.permissionMode === PLAN_MODE_ID
-				? PLAN_MODE_INJECTION + rawText
-				: rawText;
+		// mode is passed to agy via --mode (buildAgyArgs maps it onto the real
+		// agy mode enum), so plan-mode behavioral constraints are handled by agy
+		// itself; no extra system-prompt injection needed here.
 		const outcome = await this.adapter.runPrompt(
 			sessionId,
 			session,
-			text,
+			rawText,
 			client,
 		);
 
@@ -374,6 +373,19 @@ export class AgyAcpAgent {
 		} else if (params.configId === MODE_CONFIG_ID) {
 			session.permissionMode = value;
 		}
+		await this.sessions.persist(sessionId, session);
+		return { configOptions: this.configOptions(session) };
+	}
+
+	async setMode(params: {
+		sessionId?: string;
+		modeId?: string;
+	}): Promise<{ configOptions: SessionConfigOption[] }> {
+		const sessionId = this.requireSessionId(params.sessionId);
+		const modeId = typeof params.modeId === "string" ? params.modeId : "";
+		if (!modeId) throw RequestError.invalidParams(undefined, "missing modeId");
+		const session = await this.requireSession(sessionId);
+		session.permissionMode = modeId;
 		await this.sessions.persist(sessionId, session);
 		return { configOptions: this.configOptions(session) };
 	}
@@ -470,10 +482,15 @@ export class AgyAcpAgent {
 			});
 		}
 
+		// agy's own mode enum (from `agy --help`: "Press shift+tab to cycle modes
+		// (default, accept-edits, plan)"). Expose exactly those three so paseo's
+		// mode list mirrors the AGY CLI. Permission auto-approval is handled
+		// separately via agy's `--dangerously-skip-permissions` flag (no ACP
+		// interactive terminal), not as a mode.
 		const pm = session.permissionMode;
 		const currentMode =
-			pm === BYPASS_MODE_ID
-				? BYPASS_MODE_ID
+			pm === ACCEPT_EDITS_MODE_ID
+				? ACCEPT_EDITS_MODE_ID
 				: pm === PLAN_MODE_ID
 					? PLAN_MODE_ID
 					: DEFAULT_MODE_ID;
@@ -488,20 +505,19 @@ export class AgyAcpAgent {
 				{
 					value: DEFAULT_MODE_ID,
 					name: "Standard",
-					description: "Antigravity's standard mode",
+					description: "agy's standard behavior (no --mode flag)",
+				},
+				{
+					value: ACCEPT_EDITS_MODE_ID,
+					name: "Accept Edits",
+					description:
+						"agy --mode accept-edits: auto-approve file edits, prompt for commands",
 				},
 				{
 					value: PLAN_MODE_ID,
 					name: "Plan Mode",
 					description:
-						"Read-only exploration: agent may only read and search, then returns " +
-						"a step-by-step plan without making any changes",
-				},
-				{
-					value: BYPASS_MODE_ID,
-					name: "Skip Permissions",
-					description:
-						"Run without permission prompts — use with caution, as this may allow the agent to make changes without confirmation",
+						"agy --mode plan: research and plan without making changes",
 				},
 			],
 		});

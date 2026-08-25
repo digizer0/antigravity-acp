@@ -85,6 +85,9 @@ export function runAcp() {
 		.onRequest(methods.agent.session.setConfigOption, (ctx) =>
 			agentImpl.setConfigOption(ctx.params),
 		)
+		.onRequest(methods.agent.session.setMode, (ctx) =>
+			agentImpl.setMode(ctx.params as { sessionId?: string; modeId?: string }),
+		)
 		// Custom endpoint — not part of the ACP spec. Lets clients discover
 		// available models for the session/setConfigOption "model" option.
 		.onRequest("models/list", raw<unknown>(), () =>
