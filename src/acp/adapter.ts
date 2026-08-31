@@ -33,19 +33,30 @@ export class Adapter {
 
 	constructor(private readonly config: AdapterConfig) {}
 
+	/** Gracefully terminate and clean up an active child subprocess for a session. */
+	private killChild(sessionId: string): void {
+		const child = this.children.get(sessionId);
+		if (child) {
+			this.children.delete(sessionId);
+			try {
+				if (process.platform === "win32") {
+					child.kill();
+				} else {
+					child.kill("SIGINT");
+					setTimeout(() => {
+						try {
+							child.kill();
+						} catch {}
+					}, 500);
+				}
+			} catch {}
+		}
+	}
+
 	/** Request cancellation of an in-flight prompt for a session. */
 	cancel(sessionId: string): void {
 		this.cancelled.add(sessionId);
-		const child = this.children.get(sessionId);
-		if (child) {
-			// SIGINT allows agy to flush its DB before exiting; on Windows we fall
-			// back to an ungraceful kill because SIGINT is not a real signal there.
-			if (process.platform === "win32") {
-				child.kill();
-			} else {
-				child.kill("SIGINT");
-			}
-		}
+		this.killChild(sessionId);
 	}
 
 	/** Run a prompt turn end-to-end: spawn agy, stream deltas, finalize. */
@@ -56,6 +67,9 @@ export class Adapter {
 		client: AcpClient,
 	): Promise<PromptOutcome> {
 		this.cancelled.delete(sessionId);
+
+		// Clean up any lingering subprocess from a previous turn on this session.
+		this.killChild(sessionId);
 
 		// Use the session's cwd if set, otherwise fall back to the server's workingDir.
 		const effectiveCwd = session.cwd || this.config.workingDir;
@@ -105,31 +119,56 @@ export class Adapter {
 		});
 
 		// Serialized poll loop: emit updates in order, never overlapping.
-		const pollOnce = async () => {
-			for (const update of poller.poll()) {
+		const pollOnce = async (): Promise<boolean> => {
+			const updates = poller.poll();
+			for (const update of updates) {
 				await client.update(sessionId, update);
 			}
+			return updates.length > 0;
 		};
 
 		let polling = true;
-		const loop = (async () => {
-			while (polling) {
-				try {
-					await pollOnce();
-				} catch (err) {
-					console.error(`[agy-acp] poll error: ${(err as Error).message}`);
-				}
-				if (!polling) break;
-				await sleep(POLL_INTERVAL_MS);
+		let childExited = false;
+		let exitCode: number | null = null;
+
+		void child.exited.then((code) => {
+			childExited = true;
+			exitCode = code;
+		});
+
+		let quietPollCount = 0;
+		while (polling) {
+			if (this.cancelled.has(sessionId)) {
+				break;
 			}
-		})();
 
-		const exitCode = await child.exited;
+			try {
+				const hadNewUpdates = await pollOnce();
+				if (hadNewUpdates) {
+					quietPollCount = 0;
+				} else {
+					quietPollCount++;
+				}
+			} catch (err) {
+				console.error(`[agy-acp] poll error: ${(err as Error).message}`);
+			}
+
+			if (childExited) {
+				break;
+			}
+
+			// If turn completion has been recorded in transcript or DB and stream has settled
+			// (at least 2 consecutive quiet polls ~400ms without new chunks), end the turn cleanly.
+			if (poller.isTurnCompleted() && quietPollCount >= 2) {
+				break;
+			}
+
+			await sleep(POLL_INTERVAL_MS);
+		}
+
 		polling = false;
-		await loop;
-		this.children.delete(sessionId);
 
-		// A few trailing polls to catch rows flushed right around exit.
+		// A few trailing polls to catch rows flushed right around the finish boundary.
 		for (let attempt = 0; attempt < 3; attempt++) {
 			try {
 				await pollOnce();
@@ -139,6 +178,9 @@ export class Adapter {
 			if (attempt < 2) await sleep(100);
 		}
 		poller.close();
+
+		// Gracefully terminate lingering child (e.g. CLI waiting in reactive wakeup for async background tasks)
+		this.killChild(sessionId);
 
 		const stderr = (await stderrPromise).trim();
 		if (stderr.length > 0) console.error(`[agy-acp] agy stderr: ${stderr}`);
@@ -152,7 +194,7 @@ export class Adapter {
 			hadUpdates: poller.hadUpdates,
 		};
 
-		if (!wasCancelled && exitCode !== 0) {
+		if (!wasCancelled && exitCode !== null && exitCode !== 0) {
 			console.error(`[agy-acp] WARN: agy exited with status ${exitCode}`);
 			if (!poller.hadUpdates) {
 				outcome.error =

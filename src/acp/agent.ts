@@ -15,6 +15,7 @@ import type {
 	ResumeSessionResponse,
 	SessionConfigOption,
 	SetSessionConfigOptionResponse,
+	SetSessionModeResponse,
 } from "@agentclientprotocol/sdk";
 import { RequestError } from "@agentclientprotocol/sdk";
 import { type DiscoveredModel, discoverModels, runNonInteractivePrompt } from "../agy/process";
@@ -272,6 +273,7 @@ export class AgyAcpAgent {
 		sessionId?: string;
 	}): Promise<DeleteSessionResponse> {
 		const sessionId = this.requireSessionId(params.sessionId);
+		this.adapter.cancel(sessionId);
 		const deleted = await this.sessions.delete(sessionId);
 		if (!deleted) throw RequestError.resourceNotFound(sessionId);
 		this.activeClients.delete(sessionId);
@@ -380,14 +382,14 @@ export class AgyAcpAgent {
 	async setMode(params: {
 		sessionId?: string;
 		modeId?: string;
-	}): Promise<{ configOptions: SessionConfigOption[] }> {
+	}): Promise<SetSessionModeResponse> {
 		const sessionId = this.requireSessionId(params.sessionId);
 		const modeId = typeof params.modeId === "string" ? params.modeId : "";
 		if (!modeId) throw RequestError.invalidParams(undefined, "missing modeId");
 		const session = await this.requireSession(sessionId);
 		session.permissionMode = modeId;
 		await this.sessions.persist(sessionId, session);
-		return { configOptions: this.configOptions(session) };
+		return {};
 	}
 
 	listResources(): Json {

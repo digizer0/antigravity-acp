@@ -58,7 +58,7 @@ describe("agy/process.ts", () => {
 				workingDir: "/cwd",
 				conversationId: null,
 				modelId: null,
-				permissionMode: null,
+				mode: null,
 				prompt: "hello",
 			});
 			expect(args).toEqual([
@@ -76,7 +76,7 @@ describe("agy/process.ts", () => {
 				additionalDirs: ["/dir1", "/dir2"],
 				conversationId: null,
 				modelId: null,
-				permissionMode: null,
+				mode: null,
 				prompt: "hello",
 			});
 			expect(args).toEqual([
@@ -98,7 +98,7 @@ describe("agy/process.ts", () => {
 				extraArgs: ["--foo", "bar"],
 				conversationId: null,
 				modelId: null,
-				permissionMode: null,
+				mode: null,
 				prompt: "hello",
 			});
 			expect(args).toEqual([
@@ -117,7 +117,7 @@ describe("agy/process.ts", () => {
 				workingDir: "/cwd",
 				conversationId: "conv-1",
 				modelId: "model-1",
-				permissionMode: null,
+				mode: null,
 				prompt: "hello",
 			});
 			expect(args).toEqual([
@@ -133,37 +133,46 @@ describe("agy/process.ts", () => {
 			]);
 		});
 
-		it("should handle bypass permission modes", () => {
-			for (const mode of ["bypassPermissions", "bypass", "dontAsk"]) {
-				const args = buildAgyArgs({
-					workingDir: "/cwd",
-					conversationId: null,
-					modelId: null,
-					permissionMode: mode,
-					prompt: "hello",
-				});
-				expect(args).toContain("--dangerously-skip-permissions");
-			}
+		it("should pass agy mode flags", () => {
+			const planArgs = buildAgyArgs({
+				workingDir: "/cwd",
+				conversationId: null,
+				modelId: null,
+				mode: "plan",
+				prompt: "hello",
+			});
+			expect(planArgs).toContain("--mode");
+			expect(planArgs).toContain("plan");
+
+			const acceptArgs = buildAgyArgs({
+				workingDir: "/cwd",
+				conversationId: null,
+				modelId: null,
+				mode: "accept-edits",
+				prompt: "hello",
+			});
+			expect(acceptArgs).toContain("--mode");
+			expect(acceptArgs).toContain("accept-edits");
+
+			const defaultArgs = buildAgyArgs({
+				workingDir: "/cwd",
+				conversationId: null,
+				modelId: null,
+				mode: "default",
+				prompt: "hello",
+			});
+			expect(defaultArgs).not.toContain("--mode");
 		});
 
-		it("should always skip permissions regardless of mode", () => {
+		it("should always skip permissions in ACP mode", () => {
 			const args = buildAgyArgs({
 				workingDir: "/cwd",
 				conversationId: null,
 				modelId: null,
-				permissionMode: "ask",
+				mode: null,
 				prompt: "hello",
 			});
 			expect(args).toContain("--dangerously-skip-permissions");
-
-			const argsNullMode = buildAgyArgs({
-				workingDir: "/cwd",
-				conversationId: null,
-				modelId: null,
-				permissionMode: null,
-				prompt: "hello",
-			});
-			expect(argsNullMode).toContain("--dangerously-skip-permissions");
 		});
 	});
 

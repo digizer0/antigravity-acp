@@ -148,4 +148,87 @@ describe("conversation/streaming", () => {
 
 		poller.close();
 	});
+
+	test("isTurnCompleted detects completion from transcript.jsonl", () => {
+		createMockDb("turn-test");
+		const brainLogDir = path.join(
+			path.dirname(tempDir),
+			"brain",
+			"turn-test",
+			".system_generated",
+			"logs",
+		);
+		fs.mkdirSync(brainLogDir, { recursive: true });
+		const tPath = path.join(brainLogDir, "transcript.jsonl");
+
+		fs.writeFileSync(
+			tPath,
+			JSON.stringify({
+				step_index: 0,
+				type: "USER_INPUT",
+				status: "DONE",
+			}) +
+				"\n" +
+				JSON.stringify({
+					step_index: 1,
+					type: "PLANNER_RESPONSE",
+					status: "DONE",
+					tool_calls: null,
+					content: "Finished response",
+				}) +
+				"\n",
+		);
+
+		const poller = new StreamPoller({
+			dir: tempDir,
+			conversationId: "turn-test",
+			baseStepIdx: 0,
+			skipNarration: false,
+			snapshot: null,
+		});
+
+		expect(poller.isTurnCompleted()).toBe(true);
+		poller.close();
+	});
+
+	test("isTurnCompleted returns false when in-progress tool exists", () => {
+		createMockDb("tool-test");
+		const brainLogDir = path.join(
+			path.dirname(tempDir),
+			"brain",
+			"tool-test",
+			".system_generated",
+			"logs",
+		);
+		fs.mkdirSync(brainLogDir, { recursive: true });
+		const tPath = path.join(brainLogDir, "transcript.jsonl");
+
+		fs.writeFileSync(
+			tPath,
+			JSON.stringify({
+				step_index: 0,
+				type: "USER_INPUT",
+				status: "DONE",
+			}) +
+				"\n" +
+				JSON.stringify({
+					step_index: 1,
+					type: "PLANNER_RESPONSE",
+					status: "DONE",
+					tool_calls: [{ name: "run_command" }],
+				}) +
+				"\n",
+		);
+
+		const poller = new StreamPoller({
+			dir: tempDir,
+			conversationId: "tool-test",
+			baseStepIdx: 0,
+			skipNarration: false,
+			snapshot: null,
+		});
+
+		expect(poller.isTurnCompleted()).toBe(false);
+		poller.close();
+	});
 });
